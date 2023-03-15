@@ -55,6 +55,7 @@ func Test_GraphQL(t *testing.T) {
 	// explore tests
 	t.Run("expected explore failures with invalid conditions", exploreWithExpectedFailures)
 
+	// time.Sleep(5 * time.Minute)
 	// get tests
 	t.Run("getting objects", gettingObjects)
 	t.Run("getting objects with filters", gettingObjectsWithFilters)
@@ -67,6 +68,7 @@ func Test_GraphQL(t *testing.T) {
 	t.Run("getting objects with hybrid search", getWithHybridSearch)
 	t.Run("expected get failures with invalid conditions", getsWithExpectedFailures)
 	t.Run("cursor through results", getWithCursorSearch)
+	t.Run("groupBy objects", groupByObjects)
 
 	// aggregate tests
 	t.Run("aggregates noPropsClass without grouping", aggregateNoPropsClassWithoutGroupByTest)

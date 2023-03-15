@@ -145,6 +145,7 @@ func (b *classBuilder) additionalFields(classProperties graphql.Fields, class *m
 	additionalProperties["lastUpdateTimeUnix"] = b.additionalLastUpdateTimeUnix()
 	additionalProperties["score"] = b.additionalScoreField()
 	additionalProperties["explainScore"] = b.additionalExplainScoreField()
+	additionalProperties["group"] = b.additionalGroupField(class)
 	if replicationEnabled(class) {
 		additionalProperties["isConsistent"] = &graphql.Field{
 			Type: graphql.Boolean,
@@ -225,5 +226,39 @@ func (b *classBuilder) additionalExplainScoreField() *graphql.Field {
 func (b *classBuilder) additionalLastUpdateTimeUnix() *graphql.Field {
 	return &graphql.Field{
 		Type: graphql.String,
+	}
+}
+
+func (b *classBuilder) additionalGroupField(class *models.Class) *graphql.Field {
+	return &graphql.Field{
+		Type: graphql.NewObject(graphql.ObjectConfig{
+			Name: fmt.Sprintf("%sAdditionalGroup", class.Class),
+			Fields: graphql.Fields{
+				"id":          &graphql.Field{Type: graphql.Int},
+				"minDistance": &graphql.Field{Type: graphql.Float},
+				"maxDistance": &graphql.Field{Type: graphql.Float},
+				"count":       &graphql.Field{Type: graphql.Int},
+				"hits": &graphql.Field{
+					Type: graphql.NewList(graphql.NewObject(
+						graphql.ObjectConfig{
+							Name: fmt.Sprintf("%sAdditionalGroupHits", class.Class),
+							Fields: graphql.Fields{
+								"content": &graphql.Field{Type: graphql.String},
+								"_additional": &graphql.Field{
+									Type: graphql.NewObject(
+										graphql.ObjectConfig{
+											Name: fmt.Sprintf("%sAdditionalGroupHitsAdditional", class.Class),
+											Fields: graphql.Fields{
+												"distance": &graphql.Field{Type: graphql.Float},
+											},
+										},
+									),
+								},
+							},
+						},
+					)),
+				},
+			},
+		}),
 	}
 }

@@ -911,7 +911,7 @@ func (i *Index) objectSearchByShard(ctx context.Context, limit int, filters *fil
 		} else {
 			objs, scores, err = i.remote.SearchShard(
 				ctx, shardName, nil, limit, filters, keywordRanking,
-				sort, cursor, addlProps, i.replicationEnabled())
+				sort, cursor, nil, addlProps, i.replicationEnabled())
 			if err != nil {
 				return nil, nil, fmt.Errorf(
 					"remote shard object serach %s: %w", shardName, err)
@@ -941,9 +941,16 @@ func (i *Index) sort(objects []*storobj.Object, scores []float32,
 		Sort(objects, scores, limit, sort)
 }
 
+func (i *Index) mergeGroups(objects []*storobj.Object, dists []float32,
+	groupBy *searchparams.GroupBy, limit int,
+) ([]*storobj.Object, []float32, error) {
+	return newGroupMerger(objects, dists, groupBy, limit).Do()
+}
+
 func (i *Index) objectVectorSearch(ctx context.Context, searchVector []float32,
 	dist float32, limit int, filters *filters.LocalFilter,
-	sort []filters.Sort, additional additional.Properties,
+	sort []filters.Sort, groupBy *searchparams.GroupBy,
+	additional additional.Properties,
 ) ([]*storobj.Object, []float32, error) {
 	shardNames := i.getSchema.ShardingState(i.Config.ClassName.String()).
 		AllPhysicalShards()
@@ -976,14 +983,14 @@ func (i *Index) objectVectorSearch(ctx context.Context, searchVector []float32,
 			if local {
 				shard := i.Shards[shardName]
 				res, resDists, err = shard.objectVectorSearch(
-					ctx, searchVector, dist, limit, filters, sort, additional, nil)
+					ctx, searchVector, dist, limit, filters, sort, groupBy, additional)
 				if err != nil {
 					return errors.Wrapf(err, "shard %s", shard.ID())
 				}
 			} else {
 				res, resDists, err = i.remote.SearchShard(ctx,
 					shardName, searchVector, limit, filters,
-					nil, sort, nil, additional, i.replicationEnabled())
+					nil, sort, nil, groupBy, additional, i.replicationEnabled())
 				if err != nil {
 					return errors.Wrapf(err, "remote shard %s", shardName)
 				}
@@ -1006,9 +1013,16 @@ func (i *Index) objectVectorSearch(ctx context.Context, searchVector []float32,
 		return out, dists, nil
 	}
 
+	if len(shardNames) > 1 && groupBy != nil {
+		fmt.Printf("perform mergeGroups!!!!!!!!\n")
+		return i.mergeGroups(out, dists, groupBy, limit)
+	}
+
 	if len(shardNames) > 1 && len(sort) > 0 {
 		return i.sort(out, dists, sort, limit)
 	}
+
+	// TODO: merge gruops
 
 	out, dists = newDistancesSorter().sort(out, dists)
 	if limit > 0 && len(out) > limit {
@@ -1022,7 +1036,8 @@ func (i *Index) objectVectorSearch(ctx context.Context, searchVector []float32,
 func (i *Index) IncomingSearch(ctx context.Context, shardName string,
 	searchVector []float32, distance float32, limit int, filters *filters.LocalFilter,
 	keywordRanking *searchparams.KeywordRanking, sort []filters.Sort,
-	cursor *filters.Cursor, additional additional.Properties,
+	cursor *filters.Cursor, groupBy *searchparams.GroupBy,
+	additional additional.Properties,
 ) ([]*storobj.Object, []float32, error) {
 	shard, ok := i.Shards[shardName]
 	if !ok {
@@ -1040,7 +1055,7 @@ func (i *Index) IncomingSearch(ctx context.Context, shardName string,
 	}
 
 	res, resDists, err := shard.objectVectorSearch(
-		ctx, searchVector, distance, limit, filters, sort, additional, nil)
+		ctx, searchVector, distance, limit, filters, sort, groupBy, additional)
 	if err != nil {
 		return nil, nil, errors.Wrapf(err, "shard %s", shard.ID())
 	}

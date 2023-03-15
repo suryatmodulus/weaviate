@@ -24,26 +24,27 @@ type GroupParams struct {
 }
 
 type GetParams struct {
-	Filters               *filters.LocalFilter
-	ClassName             string
-	Pagination            *filters.Pagination
-	Cursor                *filters.Cursor
-	Sort                  []filters.Sort
-	Properties            search.SelectProperties
-	NearVector            *searchparams.NearVector
-	NearObject            *searchparams.NearObject
-	KeywordRanking        *searchparams.KeywordRanking
-	HybridSearch          *searchparams.HybridSearch
-	SearchVector          []float32
-	Group                 *GroupParams
-	GroupBy               *GroupByParams
+	Filters        *filters.LocalFilter
+	ClassName      string
+	Pagination     *filters.Pagination
+	Cursor         *filters.Cursor
+	Sort           []filters.Sort
+	Properties     search.SelectProperties
+	NearVector     *searchparams.NearVector
+	NearObject     *searchparams.NearObject
+	KeywordRanking *searchparams.KeywordRanking
+	HybridSearch   *searchparams.HybridSearch
+	GroupBy        *searchparams.GroupBy
+	SearchVector   []float32
+	Group          *GroupParams
+	// GroupBy               *GroupByParams
 	ModuleParams          map[string]interface{}
 	AdditionalProperties  additional.Properties
 	ReplicationProperties *additional.ReplicationProperties
 }
 
-type GroupByParams struct {
-	Prop            string
-	ObjectsPerGroup int
-	GroupsLimit     int
-}
+// type GroupByParams struct {
+// 	Prop            string
+// 	ObjectsPerGroup int
+// 	GroupsLimit     int
+// }

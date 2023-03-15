@@ -25,7 +25,6 @@ import (
 	"github.com/weaviate/weaviate/adapters/repos/db/inverted"
 	"github.com/weaviate/weaviate/adapters/repos/db/sorter"
 	"github.com/weaviate/weaviate/entities/additional"
-	"github.com/weaviate/weaviate/entities/dto"
 	"github.com/weaviate/weaviate/entities/filters"
 	"github.com/weaviate/weaviate/entities/multi"
 	"github.com/weaviate/weaviate/entities/schema"
@@ -239,8 +238,7 @@ func (s *Shard) objectSearch(ctx context.Context, limit int,
 
 func (s *Shard) objectVectorSearch(ctx context.Context,
 	searchVector []float32, targetDist float32, limit int, filters *filters.LocalFilter,
-	sort []filters.Sort, additional additional.Properties,
-	groupBy *dto.GroupByParams,
+	sort []filters.Sort, groupBy *searchparams.GroupBy, additional additional.Properties,
 ) ([]*storobj.Object, []float32, error) {
 	var (
 		ids       []uint64
@@ -293,15 +291,16 @@ func (s *Shard) objectVectorSearch(ctx context.Context,
 	}
 
 	// temp hard-coded params until we have an API
-	groupBy = &dto.GroupByParams{
-		Prop:            "modulo_9",
+	groupByDefault := &searchparams.GroupBy{
+		Property:        "modulo_9",
 		ObjectsPerGroup: 5,
-		GroupsLimit:     5,
+		Groups:          5,
 	}
-	fmt.Println(groupBy)
+	fmt.Printf("groupBy default: %+v\n", groupByDefault)
+	fmt.Printf("groupBy: %+v\n", groupBy)
 
 	if groupBy != nil {
-		return s.groupResults(ctx, ids, dists, groupBy)
+		return s.groupResults(ctx, ids, dists, groupBy, additional)
 	}
 
 	beforeObjects := time.Now()
